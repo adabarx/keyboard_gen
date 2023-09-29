@@ -79,40 +79,40 @@ impl PartialEq for Keyboard {
 impl Keyboard {
     pub fn print_self(&self) {
         // `   1   2   3   4   5   6   7   8   9   0   -   =
-        //   q   w   e   r   t   y   u   i   o   p   [   ]   \
-        //    a   s   d   f   g   h   j   k   l   ;   '
-        //      z   x   c   v   b   n   m   ,   .   /
+        //       q   w   e   r   t   y   u   i   o   p   [   ]   \
+        //        a   s   d   f   g   h   j   k   l   ;   '
+        //          z   x   c   v   b   n   m   ,   .   /
         println!("{}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
-            self.keys[0].key_val(),
-            self.keys[1].key_val(),
-            self.keys[2].key_val(),
-            self.keys[3].key_val(),
-            self.keys[4].key_val(),
-            self.keys[5].key_val(),
-            self.keys[6].key_val(),
-            self.keys[7].key_val(),
-            self.keys[8].key_val(),
-            self.keys[9].key_val(),
-            self.keys[10].key_val(),
-            self.keys[11].key_val(),
-            self.keys[12].key_val(),
+            self.keys[0].key_val().red(),
+            self.keys[1].key_val().red(),
+            self.keys[2].key_val().red(),
+            self.keys[3].key_val().red(),
+            self.keys[4].key_val().red(),
+            self.keys[5].key_val().red(),
+            self.keys[6].key_val().red(),
+            self.keys[7].key_val().red(),
+            self.keys[8].key_val().red(),
+            self.keys[9].key_val().red(),
+            self.keys[10].key_val().red(),
+            self.keys[11].key_val().red(),
+            self.keys[12].key_val().red(),
         );
-        println!("  {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
-            self.keys[13].key_val(),
-            self.keys[14].key_val(),
+        println!("      {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
+            self.keys[13].key_val().red(),
+            self.keys[14].key_val().red(),
             self.keys[15].key_val().red(),
             self.keys[16].key_val().red(),
-            self.keys[17].key_val(),
-            self.keys[18].key_val(),
+            self.keys[17].key_val().red(),
+            self.keys[18].key_val().red(),
             self.keys[19].key_val().green(),
             self.keys[20].key_val().green(),
             self.keys[21].key_val(),
             self.keys[22].key_val(),
             self.keys[23].key_val(),
             self.keys[24].key_val(),
-            self.keys[25].key_val(),
+            self.keys[25].key_val().red(),
         );
-        println!("   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
+        println!("       {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
             self.keys[26].key_val().red(),
             self.keys[27].key_val().red(),
             self.keys[28].key_val().red(),
@@ -122,38 +122,30 @@ impl Keyboard {
             self.keys[32].key_val().red(),
             self.keys[33].key_val().red(),
             self.keys[34].key_val().red(),
-            self.keys[35].key_val(),
+            self.keys[35].key_val().red(),
             self.keys[36].key_val(),
         );
-        println!("     {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
-            self.keys[37].key_val(),
-            self.keys[38].key_val(),
-            self.keys[39].key_val().green(),
-            self.keys[40].key_val().green(),
-            self.keys[41].key_val(),
-            self.keys[42].key_val(),
-            self.keys[43].key_val().green(),
-            self.keys[44].key_val().green(),
+        println!("         {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
+            self.keys[37].key_val().red(),
+            self.keys[38].key_val().red(),
+            self.keys[39].key_val().red(),
+            self.keys[40].key_val().red(),
+            self.keys[41].key_val().red(),
+            self.keys[42].key_val().red(),
+            self.keys[43].key_val().red(),
+            self.keys[44].key_val().red(),
             self.keys[45].key_val(),
-            self.keys[46].key_val(),
+            self.keys[46].key_val().red(),
         );
     }
     pub fn reproduce(&self, mutations: usize) -> Keyboard {
         let mut new_keyboard = self.clone();
 
-        let available_keys = [
-            19, 20, 21, 22, 23, 24,
-            35, 36, 39, 40, 41, 42, 43, 44, 45,
-        ];
+        let available_keys = [19, 20, 21, 22, 23, 24, 36, 45];
 
-        let letter_only_keys = [
-            19, 20, 39, 40, 43, 44
-        ];
+        let letter_only_keys = [19, 20];
 
-        let non_letter_only_keys = [
-            21, 22, 23, 24,
-            35, 36, 41, 42, 45,
-        ];
+        let non_letter_only_keys = [21, 22, 23, 24, 36, 45];
 
         let letter_keys: Vec<usize> = available_keys
             .into_iter()
@@ -234,12 +226,12 @@ impl Keyboard {
                 Key::Letter('o', 'O'),
                 Key::Punctuation('-', '_'),
                 Key::Punctuation('=', '+'),
-                Key::Letter('u', 'U'),
                 Key::Letter('f', 'F'),
-                Key::Letter('s', 'S'),
-                Key::Letter('p', 'P'),
-                Key::Letter('d', 'D'),
-                Key::Letter('y', 'Y'),
+                Key::Letter('n', 'N'),
+                Key::Letter('w', 'W'),
+                Key::Letter('v', 'V'),
+                Key::Letter('q', 'Q'),
+                Key::Letter('z', 'Z'),
                 Key::Punctuation('\\', '|'),
 
                 Key::Letter('a', 'A'),
@@ -251,29 +243,28 @@ impl Keyboard {
                 Key::StaticLetter('j', 'J'),
                 Key::StaticLetter('k', 'K'),
                 Key::StaticLetter('l', 'L'),
-                Key::Letter('z', 'Z'),
-                Key::Letter('x', 'X'),
+                Key::Letter('s', 'S'),
+                Key::Letter('g', 'G'),
                 
                 Key::Punctuation(';', ':'),
                 Key::Punctuation('\'', '"'),
-                Key::Letter('g', 'G'),
-                Key::Letter('v', 'V'),
                 Key::Letter('b', 'B'),
-                Key::Letter('n', 'N'),
                 Key::Letter('m', 'M'),
-                Key::Letter('q', 'Q'),
-                Key::Letter('w', 'W'),
+                Key::Letter('x', 'X'),
+                Key::Letter('u', 'U'),
+                Key::Letter('d', 'D'),
+                Key::Letter('p', 'P'),
+                Key::Letter('y', 'Y'),
                 Key::Punctuation('/', '?'),
             ],
             heatmap: [
-                // `123456...
-                3., 2., 2., 2., 2., 3., 3., 2., 2., 2., 2., 3., 4.,
-                //qwerty...
-                1.25, 1.5, 0.75, 0.75, 2., 2.5, 0.75, 0.75, 1., 1., 3., 3.5, 4.,
-                //asdf...
-                0.25, 0.5, 0., 0., 1., 1., 0., 0., 0.5, 0.25, 1.,
-                // zxcv...
-                1.25, 1.5, 1., 1., 2., 1., 1., 1., 1.5, 1.25,
+3.,     2.,     2.,     2.,     2.,     3.,     3.,     2.,     2.,     2.,     2.,     3.,     4.,
+
+            1.25,   1.5,    0.75,   0.75,   2.,     2.5,    0.75,   0.75,   1.,     1.,     3.,     3.5,    4.,
+
+              0.25,   0.5,    0.,     0.,     1.,     1.,     0.,     0.,     0.5,    0.25,   1.,
+
+                  1.25,   1.5,    1.,     1.,     2.,     1.,     1.,     1.,     1.5,    1.25,
             ],
             hands: [
                 LPinky(
@@ -556,18 +547,8 @@ fn main() {
         .expect("lmao");
     path.push("pile");
 
-    let mut keyboards: Vec<Keyboard> = vec![Keyboard::new_47(); 100]
-        .iter()
-        .enumerate()
-        .map(|(i, k)| k.reproduce(match i % 4 {
-                0 => 1,
-                1 => 2,
-                2 => 4,
-                3 => 8,
-                _ => panic!()
-            }))
-        .collect();
-    let mut top_50 = vec![(100000000000., Keyboard::new_47()); 50];
+    let mut keyboards: Vec<Keyboard> = vec![Keyboard::new_47(); 100];
+    let mut top_50 = vec![(73604261., Keyboard::new_47()); 50];
 
     for x in 0..200 {
         println!("Starting Generation {}", x);
