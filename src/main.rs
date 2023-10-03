@@ -6,7 +6,6 @@ use std::{
 
 use rayon::prelude::*;
 use rand::Rng;
-use colored::Colorize;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Keyboard {
@@ -228,34 +227,34 @@ impl Keyboard {
         //        a   s   d   f   g   h   j   k   l   ;   '
         //          z   x   c   v   b   n   m   ,   .   /
         println!("{}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
-            self.keys[0].key_val().red(),
-            self.keys[1].key_val().red(),
-            self.keys[2].key_val().red(),
-            self.keys[3].key_val().red(),
-            self.keys[4].key_val().red(),
-            self.keys[5].key_val().red(),
-            self.keys[6].key_val().red(),
-            self.keys[7].key_val().red(),
-            self.keys[8].key_val().red(),
-            self.keys[9].key_val().red(),
-            self.keys[10].key_val().red(),
-            self.keys[11].key_val().red(),
-            self.keys[12].key_val().red(),
+            self.keys[0].key_val(),
+            self.keys[1].key_val(),
+            self.keys[2].key_val(),
+            self.keys[3].key_val(),
+            self.keys[4].key_val(),
+            self.keys[5].key_val(),
+            self.keys[6].key_val(),
+            self.keys[7].key_val(),
+            self.keys[8].key_val(),
+            self.keys[9].key_val(),
+            self.keys[10].key_val(),
+            self.keys[11].key_val(),
+            self.keys[12].key_val(),
         );
         println!("      {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
-            self.keys[13].key_val().red(),
-            self.keys[14].key_val().red(),
+            self.keys[13].key_val(),
+            self.keys[14].key_val(),
             self.keys[15].key_val(),
             self.keys[16].key_val(),
-            self.keys[17].key_val().red(),
-            self.keys[18].key_val().red(),
+            self.keys[17].key_val(),
+            self.keys[18].key_val(),
             self.keys[19].key_val(),
             self.keys[20].key_val(),
             self.keys[21].key_val(),
             self.keys[22].key_val(),
             self.keys[23].key_val(),
             self.keys[24].key_val(),
-            self.keys[25].key_val().red(),
+            self.keys[25].key_val(),
         );
         println!("       {}   {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
             self.keys[26].key_val(),
@@ -263,16 +262,16 @@ impl Keyboard {
             self.keys[28].key_val(),
             self.keys[29].key_val(),
             self.keys[30].key_val(),
-            self.keys[31].key_val().red(),
-            self.keys[32].key_val().red(),
-            self.keys[33].key_val().red(),
-            self.keys[34].key_val().red(),
+            self.keys[31].key_val(),
+            self.keys[32].key_val(),
+            self.keys[33].key_val(),
+            self.keys[34].key_val(),
             self.keys[35].key_val(),
             self.keys[36].key_val(),
         );
         println!("         {}   {}   {}   {}   {}   {}   {}   {}   {}   {}",
-            self.keys[37].key_val().red(),
-            self.keys[38].key_val().red(),
+            self.keys[37].key_val(),
+            self.keys[38].key_val(),
             self.keys[39].key_val(),
             self.keys[40].key_val(),
             self.keys[41].key_val(),
@@ -280,7 +279,7 @@ impl Keyboard {
             self.keys[43].key_val(),
             self.keys[44].key_val(),
             self.keys[45].key_val(),
-            self.keys[46].key_val().red(),
+            self.keys[46].key_val(),
         );
     }
     pub fn reproduce(&self, mutations: usize) -> Keyboard {
@@ -701,21 +700,8 @@ fn main() {
             let mut score_history: [f32; 100] = [10000000000.; 100];
             let mut generation_count = 0_usize;
             loop {
-                if generation_count % 3 == 0 {
-                    println!("\rg {} {}",
-                        if id.to_string().len() == 1
-                        { format!(" {}", id.to_string()) }
-                        else 
-                        { id.to_string() },
-                        (1..=generation_count / 3)
-                            .into_iter()
-                            .map(|_| "**")
-                            .collect::<String>()
-                    );
-                }
-
                 let mut result = keyboards
-                    .par_iter()
+                    .iter()
                     .enumerate()
                     .map(|(_, keyboard)| {
                         if let Some(entry) = top_50.iter()
@@ -752,6 +738,19 @@ fn main() {
 
                 score_history[generation_count % 100] = top_50[0].0;
                 generation_count += 1;
+
+                if generation_count % 2 == 0 {
+                    println!("\rg {} {}",
+                        if id.to_string().len() == 1
+                        { format!(" {}", id.to_string()) }
+                        else 
+                        { id.to_string() },
+                        (1..=generation_count / 2)
+                            .into_iter()
+                            .map(|_| "*")
+                            .collect::<String>()
+                    );
+                }
 
                 if score_history.iter().all(|&s| s == score_history[0]) {
                     println!("\nending Group {}", id);
