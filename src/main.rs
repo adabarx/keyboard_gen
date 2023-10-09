@@ -1,7 +1,7 @@
 use std::{
     io::{self, Read},
     fs::{File, self},
-    path::PathBuf, env, cmp::Ordering,
+    path::PathBuf, env, cmp::Ordering, sync::atomic::AtomicU32,
 };
 
 use rayon::prelude::*;
@@ -74,7 +74,7 @@ impl PartialEq for Keyboard {
 
 impl Keyboard {
     pub fn new_random() -> Self {
-        let mut available_spots = vec![15, 16, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30,
+        let mut available_spots = vec![15, 16, 19, 20, 21, 22, 23, 24, 28, 30,
                                       35, 36, 39, 40, 41, 42, 43, 44, 45];
         let mut available_keys = vec![
             Key::Letter('i', 'I'),
@@ -96,13 +96,10 @@ impl Keyboard {
             Key::Letter('p', 'P'),
             Key::Letter('v', 'V'),
 
-            Key::Letter('a', 'A'),
             Key::Letter('r', 'R'),
             Key::Letter('t', 'T'),
-            Key::Letter('e', 'E'),
             Key::Letter('c', 'C'),
 
-            Key::Letter('s', 'S'),
             Key::Letter('y', 'Y'),
         ];
 
@@ -129,6 +126,9 @@ impl Keyboard {
         keys[18] = Some(Key::Punctuation('=', '+'));
         keys[25] = Some(Key::Punctuation('\\', '|'));
 
+        keys[26] = Some(Key::Letter('a', 'A'));
+        keys[27] = Some(Key::Letter('s', 'S'));
+        keys[29] = Some(Key::Letter('e', 'E'));
         keys[31] = Some(Key::StaticLetter('h', 'H'));
         keys[32] = Some(Key::StaticLetter('j', 'J'));
         keys[33] = Some(Key::StaticLetter('k', 'K'));
@@ -285,7 +285,7 @@ impl Keyboard {
     pub fn reproduce(&self, mutations: usize) -> Keyboard {
         let mut new_keyboard = self.clone();
 
-        let available_keys = [15, 16, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 35, 36, 39, 40, 41, 42, 43, 44, 45];
+        let available_keys = [15, 16, 19, 20, 21, 22, 23, 24, 28, 30, 35, 36, 39, 40, 41, 42, 43, 44, 45];
 
         let letter_only_keys = [19, 20];
 
@@ -690,25 +690,34 @@ fn main() {
         .expect("lmao");
     path.push("pile");
 
-    let mut results: Vec<(f32, Keyboard)> = (0..100)
+    let group_num = AtomicU32::new(1);
+
+    let mut results: Vec<(f32, Keyboard)> = (0..50)
         .into_par_iter()
-        .map(|id| {
+        .map(|_| {
+            let id = group_num.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             println!("\nStarting Group {}\n", id);
             let mut keyboards: Vec<Keyboard> = vec![Keyboard::new_random(); 100];
-            let mut top_50 = vec![(10000000000., Keyboard::new_random()); 50];
+            let mut top_50 = (0..50)
+                .into_par_iter()
+                .map(|_| {
+                    let k = Keyboard::new_random();
+                    (read_dir(path.clone(), &k).expect("you fucked up"), k)
+                })
+                .collect::<Vec<(f32, Keyboard)>>();
+                
 
             let mut score_history: [f32; 100] = [10000000000.; 100];
             let mut generation_count = 0_usize;
             loop {
                 let mut result = keyboards
-                    .iter()
-                    .enumerate()
-                    .map(|(_, keyboard)| {
+                    .into_par_iter()
+                    .map(|keyboard| {
                         if let Some(entry) = top_50.iter()
-                                                   .find(|(_, k_cmp)| *k_cmp == *keyboard) {
+                                                   .find(|(_, k_cmp)| *k_cmp == keyboard) {
                             entry.clone()
                         } else {
-                           (read_dir(path.clone(), &keyboard).expect("you fucked up"), keyboard.clone())
+                           (read_dir(path.clone(), &keyboard).expect("you fucked up again"), keyboard.clone())
                         }
                     })
                     .collect::<Vec<(f32, Keyboard)>>();
@@ -724,7 +733,7 @@ fn main() {
                     .collect();
 
                 for (i, (_, keyboard)) in top_50.iter().enumerate() {
-                    let k = keyboards.get_mut(i + 50).expect("keyboard get_mut");
+                    let k = keyboards.get_mut(i + 50).expect("why did you do that?");
                     *k = keyboard.reproduce(match i % 6 {
                             0 => 1,
                             1 => 2,
@@ -739,15 +748,15 @@ fn main() {
                 score_history[generation_count % 100] = top_50[0].0;
                 generation_count += 1;
 
-                if generation_count % 2 == 0 {
+                if generation_count % 12 == 0 {
                     println!("\rg {} {}",
                         if id.to_string().len() == 1
                         { format!(" {}", id.to_string()) }
                         else 
                         { id.to_string() },
-                        (1..=generation_count / 2)
+                        (1..=generation_count / 12)
                             .into_iter()
-                            .map(|_| "*")
+                            .map(|_| "****")
                             .collect::<String>()
                     );
                 }
