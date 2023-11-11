@@ -6,15 +6,19 @@ use std::{
 
 use rayon::prelude::*;
 use rand::Rng;
+use serde::Serialize;
+use serde_big_array::BigArray;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct Keyboard {
+    #[serde(with = "BigArray")]
     keys: [Key; 47],
+    #[serde(with = "BigArray")]
     pub heatmap: [f32; 47],
     hands: [Finger; 8],
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize)]
 enum Finger {
     // row 0 (top row) through row 3 (bottom)
     LPinky([usize; 2], usize, usize, usize),
@@ -28,7 +32,7 @@ enum Finger {
     RPinky([usize; 3], [usize; 4], [usize; 2], usize),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum Key {
     Letter(char, char),
     StaticLetter(char, char),
