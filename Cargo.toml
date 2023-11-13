@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 atomic_float = "0.1.0"
-axum = "0.6.20"
+axum = { version = "0.6.20", features = ["macros"]}
 colored = "2.0.4"
 getrandom = { version = "0.2.10", features = ["js"] }
 hyper = { version = "0.14.27", features = ["full"] }
