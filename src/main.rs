@@ -37,7 +37,12 @@ async fn start_batch(
             Json(BatchStartResponse::BatchInProgress { batch_size, completed })
         ),
         AppState::Completed(keyboard_vec) =>
-            (StatusCode::OK, Json(BatchStartResponse::Success(Some(keyboard_vec.clone())))),
+            (StatusCode::OK, Json(BatchStartResponse::Success(Some(
+                keyboard_vec
+                    .iter()
+                    .map(|&kb| kb.into())
+                    .collect()
+            )))),
     };
     
     *state = AppState::new_job(batch_size);
@@ -58,7 +63,12 @@ async fn update(State(shared_state): State<SharedState>)
         AppState::Running { batch_size, completed } =>
             (StatusCode::OK, Json(UpdateResponse::BatchInProgress { batch_size, completed })),
         AppState::Completed(keyboard_vec) =>
-            (StatusCode::OK, Json(UpdateResponse::BatchComplete(keyboard_vec))),
+            (StatusCode::OK, Json(UpdateResponse::BatchComplete(
+                keyboard_vec
+                    .iter()
+                    .map(|&kb| kb.into())
+                    .collect()
+            ))),
     }
 }
 
@@ -69,7 +79,7 @@ struct BatchRequest {
 
 #[derive(Serialize)]
 enum BatchStartResponse {
-    Success(Option<Vec<(f32, Keyboard)>>),
+    Success(Option<Vec<KeyboardResp>>),
     BatchInProgress {
         batch_size: usize,
         completed: usize,
@@ -83,8 +93,21 @@ enum UpdateResponse {
         batch_size: usize,
         completed: usize,
     },
-    BatchComplete(Vec<(f32, Keyboard)>)
+    BatchComplete(Vec<KeyboardResp>)
+}
+
+#[derive(Serialize)]
+struct KeyboardResp {
+    score: f32,
+    keyboard: Keyboard
+}
+
+impl From<(f32, Keyboard)> for KeyboardResp {
+    fn from((score, keyboard): (f32, Keyboard)) -> Self {
+        Self { score, keyboard }
+    }
 }
 
 #[derive(Serialize)]
 struct Results(Vec<Keyboard>);
+

@@ -6,18 +6,29 @@ use std::{
 
 use rayon::prelude::*;
 use rand::Rng;
-use serde::Serialize;
-use serde_big_array::BigArray;
+use serde::{Serialize, ser::SerializeMap};
+use serde::ser::SerializeSeq;
 
 use crate::AppState;
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct Keyboard {
-    #[serde(with = "BigArray")]
     keys: [Key; 47],
-    #[serde(with = "BigArray")]
     pub heatmap: [f32; 47],
     hands: [Finger; 8],
+}
+
+impl Serialize for Keyboard {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer
+    {
+        let mut seq = serializer.serialize_seq(Some(self.keys.len()))?;
+        for k in self.keys {
+            seq.serialize_element(&k)?;
+        }
+        seq.end()
+    }
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize)]
@@ -34,7 +45,7 @@ enum Finger {
     RPinky([usize; 3], [usize; 4], [usize; 2], usize),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Key {
     Letter(char, char),
     StaticLetter(char, char),
@@ -57,6 +68,39 @@ impl Key {
             Key::StaticLetter(x, _) => x.to_string(),
             Key::Punctuation(x, _) => x.to_string(),
             Key::Number(x, _) => x.to_string(),
+        }
+    }
+}
+
+impl Serialize for Key {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer {
+        match self {
+            Key::Letter(lower, upper) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("lower", lower)?;
+                map.serialize_entry("upper", upper)?;
+                map.end()
+            },
+            Key::StaticLetter(lower, upper) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("lower", lower)?;
+                map.serialize_entry("upper", upper)?;
+                map.end()
+            },
+            Key::Number(lower, upper) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("lower", lower)?;
+                map.serialize_entry("upper", upper)?;
+                map.end()
+            },
+            Key::Punctuation(lower, upper) => {
+                let mut map = serializer.serialize_map(Some(2))?;
+                map.serialize_entry("lower", lower)?;
+                map.serialize_entry("upper", upper)?;
+                map.end()
+            },
         }
     }
 }
