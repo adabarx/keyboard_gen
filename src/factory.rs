@@ -856,6 +856,7 @@ pub fn start_generation(job_name: String, batch_size: usize, shared_state: Arc<M
                     vec![("keyboard".into(), i.to_string()), ("generation".into(), generation_count.to_string())],
                     vec![("status".into(), "start".into())]
                 );
+                println!("keyboard {}", i);
                 let mut result = keyboards
                     .into_par_iter()
                     .map(|keyboard| {

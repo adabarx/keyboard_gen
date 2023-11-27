@@ -31,7 +31,6 @@ async fn start_batch(
     State(shared_state): State<SharedState>,
     Json(BatchRequest{ job_name, batch_size }): Json<BatchRequest>,
 ) -> Json<Response> {
-    println!("new");
     let mut state = shared_state.lock().unwrap();
     let resp = match state.clone() {
         AppState::Init =>
@@ -62,7 +61,6 @@ async fn start_batch(
 }
 
 async fn update(State(shared_state): State<SharedState>) -> Json<Response> {
-    println!("update");
     let state = shared_state.lock().unwrap();
     match state.clone() {
         AppState::Init =>
