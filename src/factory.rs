@@ -848,6 +848,7 @@ pub fn start_generation(job_name: String, batch_size: usize, shared_state: Arc<M
                 vec![("keyboard".into(), i.to_string())],
                 vec![("status".into(), "start".into())]
             );
+            println!("keyboard {}", i);
 
             let mut score_history: [f32; 100] = [10000000000.; 100];
             let mut generation_count = 0_usize;
@@ -856,7 +857,6 @@ pub fn start_generation(job_name: String, batch_size: usize, shared_state: Arc<M
                     vec![("keyboard".into(), i.to_string()), ("generation".into(), generation_count.to_string())],
                     vec![("status".into(), "start".into())]
                 );
-                println!("keyboard {}", i);
                 let mut result = keyboards
                     .into_par_iter()
                     .map(|keyboard| {
