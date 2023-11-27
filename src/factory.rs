@@ -1,13 +1,15 @@
 use std::{
-    io::{self, Read},
+    io::{self, Read, Write},
     fs::{File, self},
-    path::PathBuf, env, cmp::Ordering, sync::{Arc, Mutex},
+    time::{SystemTime, UNIX_EPOCH, Duration},
+    path::PathBuf, env, cmp::Ordering, sync::{Arc, Mutex, mpsc}, thread,
 };
 
 use rayon::prelude::*;
 use rand::Rng;
 use serde::{Serialize, ser::SerializeMap};
 use serde::ser::SerializeSeq;
+use flate2::{ Compression, write::GzEncoder };
 
 use crate::AppState;
 
@@ -742,14 +744,97 @@ fn read_dir(path: PathBuf, keyboard: &Keyboard) -> io::Result<f32> {
     Ok(score.load(std::sync::atomic::Ordering::Relaxed))
 }
 
-pub fn go(batch_size: usize, shared_state: Arc<Mutex<AppState>>) {
+pub fn start_generation(job_name: String, batch_size: usize, shared_state: Arc<Mutex<AppState>>) {
     let mut path = env::current_dir()
         .expect("lmao");
     path.push("pile");
 
+    let (tx, rx) = mpsc::channel::<String>();
+
+    thread::spawn(move || {
+        let mut url = env::var("URL")
+            .expect("Missing Url");
+        url.push_str("/api/v2/write");
+
+        let client = reqwest::blocking::Client::new();
+
+        let mut dp_buffer = String::new();
+        let mut count = 0;
+        let mut last_batch = SystemTime::now();
+        for recv in rx {
+            dp_buffer += (recv + "\n").as_str();
+
+            let msg_limit = count % 5000 == 0;
+            let time_limit = SystemTime::now().duration_since(last_batch).unwrap() > Duration::new(5, 0);
+            if msg_limit || time_limit {
+                let mut e = GzEncoder::new(Vec::new(), Compression::default());
+                e.write_all(dp_buffer.as_bytes()).unwrap();
+
+                client
+                    .post(url.clone())
+                    .query(&[("bucket", "keyboard_gen"), ("precision", "ms")])
+                    .header("Authorization", format!("Token {}", env::var("KEY").unwrap()))
+                    .header("Content-Type", "text/plain; charset=utf8")
+                    .header("Content-Encoding", "gzip")
+                    .header("Accept", "application/json")
+                    .body(e.finish().unwrap())
+                    .send()
+                    .unwrap();
+
+                dp_buffer = String::new();
+                count = 0;
+                last_batch = SystemTime::now();
+            }
+
+            count += 1;
+        }
+
+        // flush remaining
+        client
+            .post(url.clone())
+            .query(&[("bucket", "keyboard_gen"), ("precision", "ms")])
+            .header("Authorization", format!("Token {}", env::var("KEY").unwrap()))
+            .header("Content-Type", "text/plain; charset=utf8")
+            .header("Accept", "application/json")
+            .body(dp_buffer.clone())
+            .send()
+            .unwrap()
+    });
+
+    let send_msg = |tags: Vec<(String, String)>, fields: Vec<(String, String)>| {
+        tx.send(format!(
+        "{},{} {} {}",
+        job_name,
+        tags.iter()
+            .map(|(key, val)| {
+                format!("{}={}",
+                        str::replace(key, " ", "\\ "),
+                        str::replace(val, " ", "\\ "))
+            })
+            .collect::<Vec<String>>()
+            .join(","),
+        fields.iter()
+            .map(|(key, val)| {
+                format!("{}=\"{}\"",
+                        str::replace(key, " ", "\\ "),
+                        str::replace(val, " ", "\\ "))
+            })
+            .collect::<Vec<String>>()
+            .join(","),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis()
+        )).unwrap();
+    };
+
+    println!("start keyboards");
     let mut results: Vec<(f32, Keyboard)> = (0..batch_size)
         .into_par_iter()
-        .map(|_| {
+        .map(|i| {
+            send_msg(vec![("keyboard".into(), i.to_string())],
+                     vec![("status".into(), "preparation".into())]);
+
             let mut keyboards: Vec<Keyboard> = vec![Keyboard::new_random(); 100];
             let mut top_50 = (0..50)
                 .into_par_iter()
@@ -759,13 +844,22 @@ pub fn go(batch_size: usize, shared_state: Arc<Mutex<AppState>>) {
                 })
                 .collect::<Vec<(f32, Keyboard)>>();
                 
+            send_msg(
+                vec![("keyboard".into(), i.to_string())],
+                vec![("status".into(), "start".into())]
+            );
 
             let mut score_history: [f32; 100] = [10000000000.; 100];
             let mut generation_count = 0_usize;
-            loop {
+            let result = loop {
+                send_msg(
+                    vec![("keyboard".into(), i.to_string()), ("generation".into(), generation_count.to_string())],
+                    vec![("status".into(), "start".into())]
+                );
                 let mut result = keyboards
                     .into_par_iter()
                     .map(|keyboard| {
+                        // TODO: generate uuid
                         if let Some(entry) = top_50.iter()
                                                    .find(|(_, k_cmp)| *k_cmp == keyboard) {
                             entry.clone()
@@ -798,6 +892,11 @@ pub fn go(batch_size: usize, shared_state: Arc<Mutex<AppState>>) {
                         });
                 }
 
+                send_msg(
+                    vec![("keyboard".into(), i.to_string()), ("generation".into(), generation_count.to_string())],
+                    vec![("status".into(), "end".into())]
+                );
+
                 generation_count += 1;
 
                 score_history[generation_count % 100] = top_50[0].0;
@@ -806,7 +905,14 @@ pub fn go(batch_size: usize, shared_state: Arc<Mutex<AppState>>) {
                     state.add_one_completed();
                     break top_50[0];
                 }
-            }
+            };
+
+            send_msg(
+                vec![("keyboard".into(), i.to_string())],
+                vec![("status".into(), "end".into())]
+            );
+
+            result
         })
         .collect();
 
