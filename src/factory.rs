@@ -744,7 +744,7 @@ fn read_dir(path: PathBuf, keyboard: &Keyboard) -> io::Result<f32> {
     Ok(score.load(std::sync::atomic::Ordering::Relaxed))
 }
 
-pub fn start_generation(job_name: String, device_name: String, batch_size: usize, shared_state: Arc<Mutex<AppState>>) {
+pub fn start_generation(job_name: String, device_name: String, batch_size: usize, batch_number: usize, shared_state: Arc<Mutex<AppState>>) {
     let mut path = env::current_dir()
         .expect("lmao");
     path.push("pile");
@@ -829,12 +829,13 @@ pub fn start_generation(job_name: String, device_name: String, batch_size: usize
         )).unwrap();
     };
 
+    let keyboard_start = batch_size * batch_number;
     println!("start keyboards");
-    let mut results: Vec<(f32, Keyboard)> = (0..batch_size)
+    let mut results: Vec<(f32, Keyboard)> = (keyboard_start..(keyboard_start + batch_size))
         .into_par_iter()
         .map(|i| {
             send_msg(vec![("keyboard".into(), i.to_string())],
-                     vec![("status".into(), "preparation".into())]);
+                     vec![("keyboard status".into(), "prep".into())]);
 
             let mut keyboards: Vec<Keyboard> = vec![Keyboard::new_random(); 100];
             let mut top_50 = (0..50)
@@ -847,15 +848,16 @@ pub fn start_generation(job_name: String, device_name: String, batch_size: usize
                 
             send_msg(
                 vec![("keyboard".into(), i.to_string())],
-                vec![("status".into(), "start".into())]
+                vec![("keyboard status".into(), "start".into())]
             );
 
             let mut score_history: [f32; 100] = [10000000000.; 100];
             let mut generation_count = 0_usize;
             let result = loop {
                 send_msg(
-                    vec![("keyboard".into(), i.to_string()), ("generation".into(), generation_count.to_string())],
-                    vec![("status".into(), "start".into())]
+                    vec![("keyboard".into(), i.to_string())],
+                    vec![("generation status".into(), "start".into()),
+                        ("generation".into(), generation_count.to_string())]
                 );
                 println!("keyboard {}", i);
                 let mut result = keyboards
@@ -895,8 +897,9 @@ pub fn start_generation(job_name: String, device_name: String, batch_size: usize
                 }
 
                 send_msg(
-                    vec![("keyboard".into(), i.to_string()), ("generation".into(), generation_count.to_string())],
-                    vec![("status".into(), "end".into())]
+                    vec![("keyboard".into(), i.to_string())],
+                    vec![("generation status".into(), "end".into()),
+                        ("generation".into(), generation_count.to_string())]
                 );
 
                 generation_count += 1;
@@ -911,7 +914,7 @@ pub fn start_generation(job_name: String, device_name: String, batch_size: usize
 
             send_msg(
                 vec![("keyboard".into(), i.to_string())],
-                vec![("status".into(), "end".into())]
+                vec![("keyboard status".into(), "end".into())]
             );
 
             result
