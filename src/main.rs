@@ -29,7 +29,7 @@ async fn main() {
 #[axum::debug_handler]
 async fn start_batch(
     State(shared_state): State<SharedState>,
-    Json(BatchRequest{ job_name, batch_size }): Json<BatchRequest>,
+    Json(BatchRequest{ job_name, device_name, batch_size }): Json<BatchRequest>,
 ) -> Json<Response> {
     let mut state = shared_state.lock().unwrap();
     let resp = match state.clone() {
@@ -55,7 +55,7 @@ async fn start_batch(
     
     let thread_state = shared_state.clone();
     tokio::spawn(async move {
-        start_generation(job_name, batch_size, thread_state);
+        start_generation(job_name, device_name, batch_size, thread_state);
     });
     resp
 }
@@ -92,6 +92,7 @@ enum RespMsg {
 #[derive(Deserialize)]
 struct BatchRequest {
     job_name: String,
+    device_name: String,
     batch_size: usize,
 }
 

@@ -744,7 +744,7 @@ fn read_dir(path: PathBuf, keyboard: &Keyboard) -> io::Result<f32> {
     Ok(score.load(std::sync::atomic::Ordering::Relaxed))
 }
 
-pub fn start_generation(job_name: String, batch_size: usize, shared_state: Arc<Mutex<AppState>>) {
+pub fn start_generation(job_name: String, device_name: String, batch_size: usize, shared_state: Arc<Mutex<AppState>>) {
     let mut path = env::current_dir()
         .expect("lmao");
     path.push("pile");
@@ -803,7 +803,7 @@ pub fn start_generation(job_name: String, batch_size: usize, shared_state: Arc<M
 
     let send_msg = |tags: Vec<(String, String)>, fields: Vec<(String, String)>| {
         tx.send(format!(
-        "{},{} {} {}",
+        "{},{},{} {} {}",
         job_name,
         tags.iter()
             .map(|(key, val)| {
@@ -813,6 +813,7 @@ pub fn start_generation(job_name: String, batch_size: usize, shared_state: Arc<M
             })
             .collect::<Vec<String>>()
             .join(","),
+        format!("device=\"{}\"", device_name),
         fields.iter()
             .map(|(key, val)| {
                 format!("{}=\"{}\"",
